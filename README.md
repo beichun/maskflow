@@ -25,7 +25,7 @@ cupy
 import maskflow
 first_image = ... # an image array
 second_image = ... # another image array
-num_people, color_images = maskflow.maskPeople(first_image, second_image)
+num_people, color_images = maskflow.maskFlow(first_image, second_image)
 ```
 `first_image` and `second_image` form the image pair for optical flow calculation. shape: (height, width, 3)   
 `num_people` is the number of people detected in the first image.   
