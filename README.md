@@ -11,7 +11,7 @@ matplotlib
 scikit-image    
 tensorflow>=1.3.0   
 keras>=2.0.8  
-opencv-python 
+opencv-python   
 h5py  
 imgaug  
 IPython[all]  
