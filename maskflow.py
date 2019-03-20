@@ -37,6 +37,7 @@ except:
 
 # pretrained model for flow prdiction
 flow_model = 'default'
+FLOW_DIM = (1024, 436)
 
 
 assert (int(str('').join(torch.__version__.split('.')[0:3])) >= 41)  # requires at least pytorch version 0.4.1
@@ -725,28 +726,18 @@ def estimate(tensorFirst, tensorSecond):
     return tensorFlow[0, :, :, :].cpu()
 
 
-def resize(img):
-    # resize input pictures so that they fit into the trained model
+def resize(img,target_dim):
+    # resize the flow image to the target image dimension
 
-    DIM = (1024, 436)  # the dimension of the images in liteflownet model
-    if (img.shape[0], img.shape[0]) != DIM:
-        img = cv2.resize(img, DIM, interpolation=cv2.INTER_AREA)
-    return img
-
-
-def resize_back(img):
-    DIM = (4032, 3024)
-    if (img.shape[0], img.shape[0]) != DIM:
-        img = cv2.resize(img, DIM, interpolation=cv2.INTER_AREA)
+    if (img.shape[0], img.shape[1]) != target_dim:
+        img = cv2.resize(img, target_dim, interpolation=cv2.INTER_AREA)
     return img
 
 
 def calculateFlow(image1, image2):
-    resized_image1 = resize(image1)
-    resized_image2 = resize(image2)
-    tensor1 = torch.FloatTensor(resized_image1[:, :, ::-1].transpose(
+    tensor1 = torch.FloatTensor(image1[:, :, ::-1].transpose(
         2, 0, 1).astype(np.float32) * (1.0 / 255.0))
-    tensor2 = torch.FloatTensor(resized_image2[:, :, ::-1].transpose(
+    tensor2 = torch.FloatTensor(image2[:, :, ::-1].transpose(
         2, 0, 1).astype(np.float32) * (1.0 / 255.0))
     tensorOutput = estimate(tensor1, tensor2)
     flow = np.array(tensorOutput.numpy().transpose(1, 2, 0), np.float32)
@@ -769,19 +760,25 @@ def readFlow(name):
 
 
 
-def flow2rgb(flow):
+def flow2rgb(flow, image_dimension):
     # convert flow field to an rgb image
     flow_image = cvb.flow2rgb(flow)
     flow_image *= 255
-    flow_image = resize_back(flow_image)
+    flow_image = resize(flow_image, image_dimension)
     flow_image = np.array(flow_image,dtype = np.uint8)
     return flow_image
 
 
 def maskFlow(first_image, second_image):
-    # returns
-    flow = calculateFlow(first_image, second_image)
-    flow_image = flow2rgb(flow)
+    # calculate flow field of an image pair and mask people in the flow field
+
+    resized_image1 = resize(first_image, FLOW_DIM)
+    resized_image2 = resize(second_image, FLOW_DIM)
+    flow = calculateFlow(resized_image1, resized_image2)
+
+    image_dimension = (first_image.shape[0], second_image.shape[1])
+    flow_image = flow2rgb(flow, image_dimension)
+
     num_people, color_images = maskPeople(first_image, flow_image)
     return num_people, color_images
 
