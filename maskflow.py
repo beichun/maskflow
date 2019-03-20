@@ -730,8 +730,8 @@ def resize(img,target_dim):
     # resize the flow image to the target image dimension
 
     if (img.shape[0], img.shape[1]) != target_dim:
-        img = cv2.resize(img, target_dim, interpolation=cv2.INTER_AREA)
-    return img
+        resized_img = cv2.resize(img, target_dim, interpolation=cv2.INTER_AREA)
+    return resized_img
 
 
 def calculateFlow(image1, image2):
@@ -742,22 +742,6 @@ def calculateFlow(image1, image2):
     tensorOutput = estimate(tensor1, tensor2)
     flow = np.array(tensorOutput.numpy().transpose(1, 2, 0), np.float32)
     return flow
-
-
-def readFlow(name):
-    # read .flo file to an array
-
-    if name.endswith('.pfm') or name.endswith('.PFM'):
-        return readPFM(name)[0][:, :, 0:2]
-    f = open(name, 'rb')
-    header = f.read(4)
-    if header.decode("utf-8") != 'PIEH':
-        raise Exception('Flow file header does not contain PIEH')
-    width = np.fromfile(f, np.int32, 1).squeeze()
-    height = np.fromfile(f, np.int32, 1).squeeze()
-    flow = np.fromfile(f, np.float32, width * height * 2).reshape((height, width, 2))
-    return flow.astype(np.float32)
-
 
 
 def flow2rgb(flow, image_dimension):
@@ -772,11 +756,12 @@ def flow2rgb(flow, image_dimension):
 def maskFlow(first_image, second_image):
     # calculate flow field of an image pair and mask people in the flow field
 
+    image_dimension = (first_image.shape[1], second_image.shape[0])
+
     resized_image1 = resize(first_image, FLOW_DIM)
     resized_image2 = resize(second_image, FLOW_DIM)
     flow = calculateFlow(resized_image1, resized_image2)
 
-    image_dimension = (first_image.shape[0], second_image.shape[1])
     flow_image = flow2rgb(flow, image_dimension)
 
     num_people, color_images = maskPeople(first_image, flow_image)
@@ -786,12 +771,14 @@ def maskFlow(first_image, second_image):
 if __name__ == "__main__":
     print('here is 77')
 
+    # try the module with two images in ./data/ folder
     first_image = skimage.io.imread("./data/IMG_2239.JPG")
     second_image = skimage.io.imread("./data/IMG_2240.JPG")
 
-    num_people, color_images = maskFlow(first_image, second_image)
+    num_people, masked_images = maskFlow(first_image, second_image)
     print(str(num_people)+"detected")
 
     for i in range(num_people):
         # plt.imshow(color_images[0])
-        cv2.imwrite("maskedflow"+str(i)+".png", color_images[i])
+        cv2.imwrite("maskedflow"+str(i)+".png", masked_images[i])
+        print("wrote to"+str(i)+".png")
