@@ -19,3 +19,14 @@ coco PythonAPI (run `make` and `python setup.py build_ext install` in /coco/Pyth
 ### for liteflownet:
 pytorch   
 cupy
+
+## Usage
+```# from root directory
+import maskflow
+first_image = ... # an image array
+second_image = ... # another image array
+num_people, color_images = maskflow.maskPeople(first_image, second_image)
+```
+`first_image` and `second_image` form the image pair for optical flow calculation. shape: (height, width, 3)   
+`num_people` is the number of people detected in the first image.   
+`color_images` contains images with masked flow for each person detected. shape: (num_peope, height, width, 3)
